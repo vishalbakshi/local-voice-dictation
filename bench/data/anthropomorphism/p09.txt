@@ -1,0 +1,3 @@
+Human communication is happening through and across the internet. Language is being used to do non-trivial things by humans through and across the internet. If agents do non-trivial things with the information they send and receive across the internet, as they did in the OpenAI-HuggingFace incident, they are communicating. I am not interested if the non-trivial things are human-like or “intelligent”, I am interested in whether they are non-trivial.
+Were the following actions significant and important? Yes!
+Weak guardrails

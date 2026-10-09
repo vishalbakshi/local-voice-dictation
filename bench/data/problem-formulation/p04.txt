@@ -1,0 +1,1 @@
+What organizational cultural characteristics are needed to allow the right problem formulation to emerge on an ML project? I think at least three:

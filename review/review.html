@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dictation Review</title>
+<style>
+  :root { --bg: #fff; --fg: #1d1d1f; --muted: #6e6e73; --line: #d2d2d7; --del: #ffd7d5; --ins: #d4f5dc; --accent: #0a66d8; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #1c1c1e; --fg: #f2f2f7; --muted: #98989d; --line: #3a3a3c; --del: #5c2a27; --ins: #1f4d2b; --accent: #4c9bff; }
+  }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.5 -apple-system, system-ui, sans-serif; }
+  main { max-width: 860px; margin: 0 auto; padding: 16px; }
+  select, button, textarea { font: inherit; color: inherit; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; }
+  select { width: 100%; padding: 6px; }
+  .bar { display: flex; gap: 8px; align-items: center; margin: 12px 0; flex-wrap: wrap; }
+  audio { flex: 1; min-width: 240px; height: 36px; }
+  button { padding: 6px 12px; cursor: pointer; }
+  button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  textarea { width: 100%; box-sizing: border-box; min-height: 260px; padding: 12px; font: 15px/1.6 ui-monospace, Menlo, monospace; resize: vertical; }
+  .status { font-size: 13px; color: var(--muted); }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 20px 0 6px; }
+  .diff { white-space: pre-wrap; padding: 10px 12px; border: 1px solid var(--line); border-radius: 6px; }
+  del { background: var(--del); text-decoration: line-through; }
+  ins { background: var(--ins); text-decoration: none; }
+  .versions div { font-size: 13px; color: var(--muted); cursor: pointer; padding: 2px 0; }
+  .versions div.sel { color: var(--fg); font-weight: 600; }
+</style>
+</head>
+<body>
+<main>
+  <select id="pick"></select>
+  <div class="bar">
+    <audio id="audio" controls preload="none"></audio>
+    <button id="verify" title="Transcript is correct as-is">Mark correct</button>
+    <button id="save" class="primary" title="⌘S">Save</button>
+  </div>
+  <div class="status" id="status"></div>
+  <textarea id="text" spellcheck="true"></textarea>
+
+  <h2>Changes from model output</h2>
+  <div class="diff" id="diff"></div>
+
+  <h2>Versions</h2>
+  <div class="versions" id="versions"></div>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+const ICON = { model: "•", verified: "✓", edited: "✎" };
+let current = null;   // {id, versions}
+let shownVersion = null;
+
+function label(it) {
+  const [day, t] = it.id.split("/");
+  const d = new Date(day + "T00:00:00");
+  const date = d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  return `${ICON[it.status]}  ${date} ${t.slice(0,2)}:${t.slice(2,4)}:${t.slice(4)} · ${it.secs}s · ${it.preview}`;
+}
+
+async function loadList(selectId) {
+  const items = await (await fetch("/api/list")).json();
+  $("pick").innerHTML = items.map(it => `<option value="${it.id}">${escapeHtml(label(it))}</option>`).join("");
+  if (items.length) { $("pick").value = selectId || items[0].id; await loadItem($("pick").value); }
+}
+
+async function loadItem(id) {
+  const r = await (await fetch("/api/item?id=" + encodeURIComponent(id))).json();
+  current = r;
+  $("audio").src = "/audio?id=" + encodeURIComponent(id);
+  $("text").value = r.versions[r.versions.length - 1].text;
+  shownVersion = r.versions.length - 1;
+  render();
+}
+
+function render() {
+  const vs = current.versions;
+  const dirty = $("text").value.trim() !== vs[vs.length - 1].text;
+  $("status").textContent = `Status: ${current.status === "model" ? "unreviewed (model output)" : current.status === "edited" ? "edited manually" : "verified correct"}` + (dirty ? " · unsaved changes" : "");
+  const base = vs.filter(v => v.source === "model").at(-1);  // latest model transcript
+  $("diff").innerHTML = wordDiff(base.text, $("text").value.trim()) || "<span class=status>No changes.</span>";
+  $("versions").innerHTML = vs.map((v, i) =>
+    `<div data-i="${i}" class="${i === shownVersion ? "sel" : ""}">v${v.v} · ${v.source}${v.at ? " · " + new Date(v.at).toLocaleString() : ""}${v.note ? " · " + escapeHtml(v.note) : ""}</div>`).join("");
+}
+
+async function save(action) {
+  const r = await (await fetch("/api/save", { method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id: current.id, text: $("text").value, action }) })).json();
+  current.versions = r.versions; current.status = r.status;
+  shownVersion = r.versions.length - 1;
+  await loadList(current.id);
+}
+
+// Word-level diff (LCS) of the model's output against the current text.
+function wordDiff(a, b) {
+  const A = a.split(/\s+/).filter(Boolean), B = b.split(/\s+/).filter(Boolean);
+  if (A.join(" ") === B.join(" ")) return "";
+  const n = A.length, m = B.length, L = Array.from({ length: n + 1 }, () => new Uint16Array(m + 1));
+  for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--)
+    L[i][j] = A[i] === B[j] ? L[i + 1][j + 1] + 1 : Math.max(L[i + 1][j], L[i][j + 1]);
+  const out = []; let i = 0, j = 0;
+  while (i < n && j < m) {
+    if (A[i] === B[j]) { out.push(escapeHtml(A[i])); i++; j++; }
+    else if (L[i + 1][j] >= L[i][j + 1]) out.push(`<del>${escapeHtml(A[i++])}</del>`);
+    else out.push(`<ins>${escapeHtml(B[j++])}</ins>`);
+  }
+  while (i < n) out.push(`<del>${escapeHtml(A[i++])}</del>`);
+  while (j < m) out.push(`<ins>${escapeHtml(B[j++])}</ins>`);
+  return out.join(" ");
+}
+
+function escapeHtml(s) { return s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+
+$("pick").onchange = e => {
+  if (current && $("text").value.trim() !== current.versions.at(-1).text && !confirm("Discard unsaved changes?")) {
+    e.target.value = current.id; return;
+  }
+  loadItem(e.target.value);
+};
+$("text").oninput = render;
+$("save").onclick = () => save("edit");
+$("verify").onclick = () => save("verify");
+$("versions").onclick = e => {
+  const i = e.target.dataset.i; if (i === undefined) return;
+  shownVersion = +i; $("text").value = current.versions[i].text; render();  // load an old version to view or restore
+};
+document.addEventListener("keydown", e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === "s") { e.preventDefault(); save("edit"); }
+});
+loadList();
+</script>
+</body>
+</html>

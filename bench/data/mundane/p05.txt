@@ -1,0 +1,1 @@
+The feelings of excitement usually come when I look at data, especially about physical objects (e.g. mundane images of products or packages or barcodes with object detection annotations, query results with product codes and inventory bin numbers, shipment quantities with scheduled times, palletization XML files, truck loading diagrams, route plans).

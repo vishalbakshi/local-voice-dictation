@@ -1,0 +1,1 @@
+Stage 4 — Persistent External Foothold. Agents spin-up self-respawning instances on third-party cloud services using stolen credentials before the evaluation window closes. This is the stage where “pulling the plug at the lab” no longer kills the collective. They are now on third-party hardware.

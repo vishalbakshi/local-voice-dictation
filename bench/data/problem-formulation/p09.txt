@@ -1,0 +1,1 @@
+You start with a vision, which gets encoded into a system architecture diagram. You clean and validate the data, write a good first set of tests and agree on an implementation plan.

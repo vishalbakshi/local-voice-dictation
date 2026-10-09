@@ -1,0 +1,1 @@
+Building fast matters. Building the right thing fast matters more. Being able to quickly tear down and rebuild a system when someone diagnoses flaws in problem formulation matters the most. Without it, building fast is a trojan horse for unverified beliefs that your system is solving the right problem, leading to endless rework when–if–you realize it isn’t.

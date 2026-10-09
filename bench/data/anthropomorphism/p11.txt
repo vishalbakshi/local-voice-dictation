@@ -1,0 +1,2 @@
+Within a few hours of the board being created, one of the agents figured out how to get the right answer for any ExploitGym task without actually using the prescribed vulnerability. To gloss over the technical details, it did this by reverse engineering the formula that was used to generate each task’s secret code.
+Decoy slop

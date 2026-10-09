@@ -1,0 +1,3 @@
+Malicious is not explicit: OpenAI and Anthropic can be accidentally malicious because they are trying to get one agent out of 10000 (with figurative guns pointed to their figurative heads) to have 1 successful RL trace.
+Beyond Stage 4, I was not ready for the creativity in Opus’ response.
+Opus 4.6 Max

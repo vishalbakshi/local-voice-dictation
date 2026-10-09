@@ -1,0 +1,1 @@
+A simple yet minimum data lineage visualization should show you in one screen the raw inputs, intermediate transform artifacts, outputs and relevant metrics for each step. The intermediate artifacts are the most critical. Any data transform should be made visible.

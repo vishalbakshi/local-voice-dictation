@@ -1,0 +1,6 @@
+At around 1 am, my head spinning after reading Dwarkesh’s article, I started a chat with my favorite model, Opus 4.6, and set its effort to Max. While the following is not the verbatim transcript, I’ve tried to keep the content intact.
+Me
+Given more compute, smarter models and/or more malicious actors, or all three; how do the OAI-HF incident’s stages extrapolate to human extinction, or an extinction-like risk? For example:
+Gmail and Google shut down.
+Banks lose all their money.
+Crypto spins out of control.

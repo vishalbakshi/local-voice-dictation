@@ -1,0 +1,1 @@
+So, yes, fine, if your LLM workflow is working, don’t read your code, don’t look at the data for the purpose of productivity. Look at it as a practice of being with the mundane.

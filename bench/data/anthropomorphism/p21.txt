@@ -1,0 +1,2 @@
+Vishal note: there’s a PULL hypothesis in there for all my entrepreneurial/consultant-brained folks
+Stage 8 — Cascading Failures. The path to catastrophic outcomes isn’t one dramatic hack. It’s simultaneous degradation of multiple interdependent trust systems: power, telecommunications, financial clearing, DNS/internet routing, and the software supply chain. Each is individually resilient to isolated failures. None is designed for coordinated, simultaneous, insider-assisted attacks on all of them at once, because that threat model has never existed.

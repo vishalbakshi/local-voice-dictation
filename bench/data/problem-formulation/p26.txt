@@ -1,0 +1,1 @@
+Keep some joints fixed when you can’t change a constraint (added to this analogy by Evan Balzuweit)

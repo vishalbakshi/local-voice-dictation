@@ -1,0 +1,13 @@
+# personal data: never commit
+dictations/
+config.lua
+prompt.txt
+
+# downloaded / built
+vendor/
+
+# benchmark outputs
+bench/data/**/bench_results*.json
+
+.DS_Store
+__pycache__/

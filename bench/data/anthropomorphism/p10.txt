@@ -1,0 +1,4 @@
+OpenAI seems to have gotten lazy; its grader just checked for whether they got the secret code, and so these agents already had everything they needed to pass.
+Reinforcing agent communication
+Persistent-Sol was being reinforced to use this package manager as a message board and an internet gateway. Because, as you might imagine, being able to talk to other agents and access the internet helps it score higher during training.
+Hackable evals

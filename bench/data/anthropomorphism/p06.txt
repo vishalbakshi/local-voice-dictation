@@ -1,0 +1,2 @@
+Last night I read Dwarkesh Patel’s eloquent recap of the OpenAI-HuggingFace agent attack, The Rise and Fall of Agent Civilizations. The events that took places across three stages (the agent message board, the HuggingFace hack, and the OpenAI hack) left me mesmerized, stunned, in awe, and nauseous. It was undeniably a milestone. It will forever change how I see technology.
+Dwarkesh’s addendum stated:

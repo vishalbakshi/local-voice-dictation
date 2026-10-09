@@ -1,0 +1,1 @@
+Monitoring diagnostics and metrics, however granular, is not sufficient. Monitoring a sample of inputs and outputs is better, but still obscures the early problem formulation reasoning encoded in the pipeline.

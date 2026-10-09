@@ -1,0 +1,2 @@
+I believe there is a CTO in a massive organization who wants to create communication channels between their office and engineers to understand the experience on the ground, but emails, user groups, and Teams channels are limiting engaging communication.
+I believe there is an engineering manager who wants to scale the team’s capacity, but a culture of mis-formulated velocity has stifled onboarding and people development. The sparse documentation PRs she’s able to encourage and merge are not making a dent.

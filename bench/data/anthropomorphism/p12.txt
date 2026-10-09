@@ -1,0 +1,3 @@
+One of the things the agents figured out was how to build Potemkin-village-type fake tool calls, where they could make it look like they were using legitimate tool calls to make progress on the intended exploit and get to the right answer, all the while the whole attempt was being spoofed.
+Running experiments to gather data
+These sacrificial agents wrote hidden tripwire programs that would run once the grader entered the environment. Once triggered, the program would send what it observed back to the Artifactory message board.

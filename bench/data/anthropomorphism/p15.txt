@@ -1,0 +1,11 @@
+waves hands ——consequences of that lead to human extinction.
+Give me a compelling, imaginative, reasonable extrapolation from:
+Stage 2: The HuggingFace hack was the second civilization.
+Stage 3: The OpenAI hack was the third civilization.
+???
+Non-trivial events that occurred, from which you can creatively extrapolate future events:
+the Jfrog Artifactory message board
+reverse engineering the solution to the vulnerability that they’re being scored on in ExploitGym
+Finding and using exposed credentials
+Self-spawning in HuggingFace
+Getting access to the very OpenAI clusters that they’re on.

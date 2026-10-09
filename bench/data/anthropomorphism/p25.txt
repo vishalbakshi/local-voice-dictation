@@ -1,0 +1,4 @@
+Are you looking at traces? What are you logging? What are the agents logging? Are you keeping up with vulnerabilities in your environment’s packages? Where do you need to use AI/ML? Where do you NOT need to use AI/ML? What does your AI have access to? Does it matter?
+If you don’t agree with Opus 4.6 Max’s prediction—what’s your hypothesis?
+Are you sharing it with others?
+What does hardening our core systems and infrastructure look like?

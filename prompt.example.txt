@@ -1,0 +1,1 @@
+Notes on ML work: fine-tuning with LoRA on Modal, PyTorch, Hugging Face, whisper.cpp, llama.cpp, macOS, GitHub, CI, codebase, dataset, one-on-one. Meeting moved to 2:15 on Tuesday; accuracy improved to 91.2%.
