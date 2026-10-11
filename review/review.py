@@ -95,13 +95,26 @@ def save(item_id, text, action):
 
 
 class Handler(BaseHTTPRequestHandler):
-    def send(self, code, body, ctype="application/json"):
+    def send(self, code, body, ctype="application/json", headers=()):
         data = body if isinstance(body, bytes) else json.dumps(body).encode()
         self.send_response(code)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(data)))
+        for k, v in headers:
+            self.send_header(k, v)
         self.end_headers()
         self.wfile.write(data)
+
+    def send_audio(self, path):
+        # Browsers only let you seek if the server answers Range requests.
+        data = open(path, "rb").read()
+        m = re.match(r"bytes=(\d*)-(\d*)", self.headers.get("Range", ""))
+        if not m:
+            return self.send(200, data, "audio/wav", [("Accept-Ranges", "bytes")])
+        start = int(m[1]) if m[1] else max(0, len(data) - int(m[2]))
+        end = min(int(m[2]), len(data) - 1) if m[1] and m[2] else len(data) - 1
+        self.send(206, data[start:end + 1], "audio/wav",
+                  [("Accept-Ranges", "bytes"), ("Content-Range", f"bytes {start}-{end}/{len(data)}")])
 
     def do_GET(self):
         url = urlparse(self.path)
@@ -115,7 +128,7 @@ class Handler(BaseHTTPRequestHandler):
                 versions = load_versions(q["id"])
                 self.send(200, {"id": q["id"], "versions": versions, "status": status(versions)})
             elif url.path == "/audio":
-                self.send(200, open(paths(q["id"])[0], "rb").read(), "audio/wav")
+                self.send_audio(paths(q["id"])[0])
             else:
                 self.send(404, {"error": "not found"})
         except (KeyError, ValueError, FileNotFoundError) as e:

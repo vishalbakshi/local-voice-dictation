@@ -19,6 +19,7 @@
   button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
   textarea { width: 100%; box-sizing: border-box; min-height: 260px; padding: 12px; font: 15px/1.6 ui-monospace, Menlo, monospace; resize: vertical; }
   .status { font-size: 13px; color: var(--muted); }
+  .nav { display: flex; gap: 8px; align-items: center; margin: -4px 0 12px; }
   h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 20px 0 6px; }
   .diff { white-space: pre-wrap; padding: 10px 12px; border: 1px solid var(--line); border-radius: 6px; }
   del { background: var(--del); text-decoration: line-through; }
@@ -34,6 +35,14 @@
     <audio id="audio" controls preload="none"></audio>
     <button id="verify" title="Transcript is correct as-is">Mark correct</button>
     <button id="save" class="primary" title="⌘S">Save</button>
+  </div>
+  <div class="nav">
+    <button id="newer">← Newer</button>
+    <button id="older">Older →</button>
+    <span class="status" id="pos"></span>
+    <select id="speed" title="Playback speed (doesn't change the file)" style="width:auto;margin-left:auto">
+      <option>1</option><option>1.25</option><option>1.5</option><option>1.75</option><option>2</option>
+    </select>
   </div>
   <div class="status" id="status"></div>
   <textarea id="text" spellcheck="true"></textarea>
@@ -67,6 +76,7 @@ async function loadItem(id) {
   const r = await (await fetch("/api/item?id=" + encodeURIComponent(id))).json();
   current = r;
   $("audio").src = "/audio?id=" + encodeURIComponent(id);
+  $("audio").playbackRate = +$("speed").value;  // a new src resets the rate
   $("text").value = r.versions[r.versions.length - 1].text;
   shownVersion = r.versions.length - 1;
   render();
@@ -74,6 +84,9 @@ async function loadItem(id) {
 
 function render() {
   const vs = current.versions;
+  const sel = $("pick").selectedIndex, n = $("pick").options.length;
+  $("pos").textContent = `${sel + 1} of ${n}`;
+  $("newer").disabled = sel <= 0; $("older").disabled = sel >= n - 1;
   const dirty = $("text").value.trim() !== vs[vs.length - 1].text;
   $("status").textContent = `Status: ${current.status === "model" ? "unreviewed (model output)" : current.status === "edited" ? "edited manually" : "verified correct"}` + (dirty ? " · unsaved changes" : "");
   const base = vs.filter(v => v.source === "model").at(-1);  // latest model transcript
@@ -110,12 +123,29 @@ function wordDiff(a, b) {
 
 function escapeHtml(s) { return s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
 
+const okToLeave = () =>
+  !current || $("text").value.trim() === current.versions.at(-1).text || confirm("Discard unsaved changes?");
+
 $("pick").onchange = e => {
-  if (current && $("text").value.trim() !== current.versions.at(-1).text && !confirm("Discard unsaved changes?")) {
-    e.target.value = current.id; return;
-  }
+  if (!okToLeave()) { e.target.value = current.id; return; }
   loadItem(e.target.value);
 };
+// The list is newest first, so "older" moves down it.
+function go(step) {
+  const i = $("pick").selectedIndex + step;
+  if (i < 0 || i >= $("pick").options.length || !okToLeave()) return;
+  $("pick").selectedIndex = i;
+  loadItem($("pick").value);
+}
+// Playback speed: only changes the player, remembered across reloads.
+try { $("speed").value = localStorage.getItem("speed") || "1"; } catch {}
+$("speed").onchange = () => {
+  $("audio").playbackRate = +$("speed").value;
+  try { localStorage.setItem("speed", $("speed").value); } catch {}
+};
+$("audio").onloadedmetadata = () => { $("audio").playbackRate = +$("speed").value; };
+$("newer").onclick = () => go(-1);
+$("older").onclick = () => go(1);
 $("text").oninput = render;
 $("save").onclick = () => save("edit");
 $("verify").onclick = () => save("verify");
