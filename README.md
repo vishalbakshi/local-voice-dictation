@@ -1,6 +1,6 @@
 # local-voice-dictation
 
-Vibed w/Opus-5.5.
+Pointed Opus-5.5 slop cannon at this problem and fired.
 
 Hold Fn, talk, let go. Your words show up wherever your cursor is. Everything runs on your Mac with [whisper.cpp](https://github.com/ggml-org/whisper.cpp), and nothing leaves it.
 
