@@ -19,6 +19,8 @@
   button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
   textarea { width: 100%; box-sizing: border-box; min-height: 260px; padding: 12px; font: 15px/1.6 ui-monospace, Menlo, monospace; resize: vertical; }
   .status { font-size: 13px; color: var(--muted); }
+  .model { font-size: 13px; margin-bottom: 4px; }
+  .model.pk { color: var(--accent); font-weight: 600; }
   .nav { display: flex; gap: 8px; align-items: center; margin: -4px 0 12px; }
   h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 20px 0 6px; }
   .diff { white-space: pre-wrap; padding: 10px 12px; border: 1px solid var(--line); border-radius: 6px; }
@@ -44,6 +46,7 @@
       <option>1</option><option>1.25</option><option>1.5</option><option>1.75</option><option>2</option>
     </select>
   </div>
+  <div class="model" id="model"></div>
   <div class="status" id="status"></div>
   <textarea id="text" spellcheck="true"></textarea>
 
@@ -63,7 +66,16 @@ function label(it) {
   const [day, t] = it.id.split("/");
   const d = new Date(day + "T00:00:00");
   const date = d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
-  return `${ICON[it.status]}  ${date} ${t.slice(0,2)}:${t.slice(2,4)}:${t.slice(4)} · ${it.secs}s · ${it.preview}`;
+  const tag = isParakeet(it.model) ? ` [${modelName(it.model)}]` : "";
+  return `${ICON[it.status]}  ${date} ${t.slice(0,2)}:${t.slice(2,4)}:${t.slice(4)} · ${it.secs}s${tag} · ${it.preview}`;
+}
+
+// Dictations transcribed by Parakeet get flagged; older ones (no model in the log) were Whisper small.en.
+function isParakeet(m) { return /parakeet|^ft-|mix_|tdt/.test(m || ""); }
+function modelName(m) {
+  if (!m) return "unknown";
+  const ft = m.match(/^ft-(.+?)(-Q\w+)?$/);
+  return ft ? `Parakeet 110M · fine-tuned ${ft[1]}` : m.startsWith("parakeet") ? `Parakeet · ${m}` : `Whisper ${m}`;
 }
 
 async function loadList(selectId) {
@@ -88,6 +100,8 @@ function render() {
   $("pos").textContent = `${sel + 1} of ${n}`;
   $("newer").disabled = sel <= 0; $("older").disabled = sel >= n - 1;
   const dirty = $("text").value.trim() !== vs[vs.length - 1].text;
+  $("model").textContent = `Transcribed by: ${modelName(current.model)}` + (current.model && current.model !== modelName(current.model) ? ` (${current.model})` : "");
+  $("model").className = isParakeet(current.model) ? "model pk" : "model";
   $("status").textContent = `Status: ${current.status === "model" ? "unreviewed (model output)" : current.status === "edited" ? "edited manually" : "verified correct"}` + (dirty ? " · unsaved changes" : "");
   const base = vs.filter(v => v.source === "model").at(-1);  // latest model transcript
   $("diff").innerHTML = wordDiff(base.text, $("text").value.trim()) || "<span class=status>No changes.</span>";

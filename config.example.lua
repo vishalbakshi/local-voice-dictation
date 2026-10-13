@@ -1,6 +1,12 @@
 -- Copied to config.lua by setup.sh (which fills in the @...@ values).
 -- Edit config.lua, then Hammerspoon > Reload Config.
 return {
+  -- "whisper" (whisper-server, uses prompt.txt) or "parakeet" (a GGUF in
+  -- vendor/models, run by dictate/parakeet_server.py from .venv; no prompt).
+  engine = "whisper",
+  parakeet_model = "ft-mix_100-Q8_0",  -- vendor/models/<name>.gguf
+  parakeet_port = 8180,
+
   -- whisper.cpp model name (file: vendor/whisper.cpp/models/ggml-<model>.bin).
   -- Download others with: vendor/whisper.cpp/models/download-ggml-model.sh <model>
   model = "@MODEL@",

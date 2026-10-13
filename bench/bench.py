@@ -1,6 +1,3 @@
-# /// script
-# dependencies = ["jiwer", "whisper-normalizer"]
-# ///
 """WER + latency for whisper.cpp models, using the same path as dictation
 (whisper-server + dictate/transcribe.py).
 

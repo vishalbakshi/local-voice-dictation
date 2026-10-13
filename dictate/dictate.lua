@@ -18,6 +18,17 @@ local TRANSCRIBE = ROOT .. "/dictate/transcribe.py"
 local FFMPEG, PYTHON = cfg.ffmpeg, cfg.python
 local MIC = cfg.mic -- by name: virtual devices (Zoom, Teams, ...) shift indices
 local PORT = cfg.port
+
+-- Engine: "whisper" (whisper-server + vocab prompt) or "parakeet" (a
+-- fine-tuned or stock Parakeet GGUF in vendor/models, served by
+-- dictate/parakeet_server.py from the project's .venv). Separate ports, so a
+-- leftover server from the other engine never answers by mistake.
+local ENGINE = cfg.engine or "whisper"
+local PK_MODEL = ROOT .. "/vendor/models/" .. (cfg.parakeet_model or "") .. ".gguf"
+local PK_SERVER = ROOT .. "/dictate/parakeet_server.py"
+local PK_PORT = cfg.parakeet_port or 8180
+local VENV_PYTHON = ROOT .. "/.venv/bin/python"
+local MODEL_NAME = ENGINE == "parakeet" and cfg.parakeet_model or cfg.model
 local MIN_AUDIO = 0.4 -- seconds of captured audio; shorter recordings are discarded
 local READY_SOUND = hs.sound.getByName("Tink")
 
@@ -51,6 +62,15 @@ end
 
 local function startServer()
   if server and server:isRunning() then return end
+  if ENGINE == "parakeet" then
+    if hs.http.get("http://127.0.0.1:" .. PK_PORT .. "/", nil) > 0 then return end
+    server = hs.task.new(VENV_PYTHON, function(code, _, stderr)
+      print("dictate: parakeet server exited with code " .. tostring(code) .. " " .. tostring(stderr))
+      setStatus("err")
+    end, { PK_SERVER, PK_MODEL, tostring(PK_PORT), tostring(cfg.threads) })
+    server:start()
+    return
+  end
   -- A server left over from a previous config load may still hold the port.
   if hs.http.get("http://127.0.0.1:" .. PORT .. "/", nil) > 0 then return end
   local args = { "-m", MODEL, "-t", tostring(cfg.threads), "--host", "127.0.0.1", "--port", tostring(PORT) }
@@ -113,13 +133,10 @@ local function transcribe(wav, heldFor)
   local appName = app and app:name() or ""
   local t0 = hs.timer.secondsSinceEpoch()
   setStatus("busy")
-  -- transcribe.py sends the request(s) to whisper-server; it splits audio over
-  -- ~28 s at pauses, since multi-window decoding on the server drops text.
-  hs.task.new(PYTHON, function(code, stdout, stderr)
+  local function done(ok, resp, errInfo)
     setStatus("idle")
-    local ok, resp = pcall(hs.json.decode, stdout or "")
-    if code ~= 0 or not ok or not resp or not resp.text then
-      print("dictate: transcription failed: " .. tostring(stdout) .. tostring(stderr))
+    if not ok or not resp or not resp.text then
+      print("dictate: transcription failed: " .. tostring(errInfo))
       setStatus("err")
       return
     end
@@ -132,8 +149,22 @@ local function transcribe(wav, heldFor)
     appendFile(DATA_DIR .. "/log.jsonl", hs.json.encode({
       time = os.date("!%Y-%m-%dT%H:%M:%SZ"), wav = wav, text = text,
       audio_secs = secs, held_secs = heldFor, latency_secs = latency,
-      chunks = resp.chunks, model = cfg.model, app = appName,
+      chunks = resp.chunks, model = MODEL_NAME, engine = ENGINE, app = appName,
     }) .. "\n")
+  end
+  if ENGINE == "parakeet" then
+    hs.http.asyncPost("http://127.0.0.1:" .. PK_PORT .. "/inference", hs.json.encode({ path = wav }),
+      { ["Content-Type"] = "application/json" }, function(status, body)
+        local ok, resp = pcall(hs.json.decode, body or "")
+        done(status == 200 and ok, resp, body)
+      end)
+    return
+  end
+  -- transcribe.py sends the request(s) to whisper-server; it splits audio over
+  -- ~28 s at pauses, since multi-window decoding on the server drops text.
+  hs.task.new(PYTHON, function(code, stdout, stderr)
+    local ok, resp = pcall(hs.json.decode, stdout or "")
+    done(code == 0 and ok, resp, tostring(stdout) .. tostring(stderr))
   end, { TRANSCRIBE, wav, tostring(PORT), PROMPT_FILE }):start()
 end
 
@@ -277,6 +308,6 @@ end
 M.flagsTap:start()
 M.keyTap:start()
 setStatus("idle")
-print("dictate: ready (hold Fn, or double-tap Fn for hands-free)")
+print("dictate: ready (hold Fn, or double-tap Fn for hands-free) · " .. ENGINE .. ": " .. tostring(MODEL_NAME))
 
 return M

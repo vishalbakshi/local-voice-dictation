@@ -58,8 +58,25 @@ def audio_secs(wav):
     return max(0.0, (os.path.getsize(wav) - 44) / 32000)  # 16 kHz mono s16
 
 
+def models_by_id():
+    """Which model transcribed each dictation, from dictations/log.jsonl.
+    Older entries without a model field were Whisper small.en."""
+    out = {}
+    log = os.path.join(DATA, "log.jsonl")
+    if os.path.exists(log):
+        for line in open(log):
+            try:
+                r = json.loads(line)
+            except ValueError:
+                continue
+            item_id = "/".join(r.get("wav", "").removesuffix(".wav").split("/")[-2:])
+            out[item_id] = r.get("model") or "small.en"
+    return out
+
+
 def list_items():
     items = []
+    models = models_by_id()
     for day in sorted(os.listdir(DATA), reverse=True):
         if not re.match(r"^\d{4}-\d{2}-\d{2}$", day):
             continue
@@ -73,6 +90,7 @@ def list_items():
                 "secs": round(audio_secs(os.path.join(DATA, day, name)), 1),
                 "status": status(versions),
                 "preview": versions[-1]["text"][:90],
+                "model": models.get(item_id, "unknown"),
             })
     return items
 
@@ -126,7 +144,8 @@ class Handler(BaseHTTPRequestHandler):
                 self.send(200, list_items())
             elif url.path == "/api/item":
                 versions = load_versions(q["id"])
-                self.send(200, {"id": q["id"], "versions": versions, "status": status(versions)})
+                self.send(200, {"id": q["id"], "versions": versions, "status": status(versions),
+                                "model": models_by_id().get(q["id"], "unknown")})
             elif url.path == "/audio":
                 self.send_audio(paths(q["id"])[0])
             else:

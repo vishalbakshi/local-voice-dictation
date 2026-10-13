@@ -57,7 +57,10 @@ Dropdown of dictations (• unreviewed, ✓ marked correct, ✎ edited), an audi
 
 ## Benchmarking
 
+Needs [uv](https://docs.astral.sh/uv/). `uv sync` sets up a Python 3.12 env in `.venv/`.
+
 ```bash
+uv sync
 uv run bench/bench.py --prompt prompt.txt                  # all of bench/data
 uv run bench/bench.py --models small.en,base.en            # compare models
 python3 bench/read.py my-post.txt bench/data/my-post       # record your own test set

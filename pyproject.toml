@@ -1,0 +1,19 @@
+[project]
+name = "local-voice-dictation"
+version = "0.1.0"
+description = "Local Fn-key dictation for macOS with whisper.cpp, plus benchmarks and fine-tuning"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "jiwer",
+    "whisper-normalizer",
+    "numpy",
+    "modal",
+    # cbor2 6.x (a modal dependency) has no Intel Mac wheel and needs Rust to build.
+    "cbor2<6",
+    "gguf>=0.19.0",
+]
+
+# Not a package, just a pinned environment for the bench/ and finetune/ scripts.
+# The dictation and review tools use only the standard library and don't need it.
+[tool.uv]
+package = false
