@@ -13,9 +13,10 @@ return {
   gpu = @GPU@,          -- Metal on Apple Silicon; Intel Macs run on CPU (see docs/findings.md)
   threads = @THREADS@,  -- performance cores
 
-  -- Mic, by name. List yours with:
+  -- Mics by name, in priority order: each dictation uses the first one
+  -- that's plugged in. List yours with:
   --   ffmpeg -f avfoundation -list_devices true -i ""
-  mic = "@MIC@",
+  mics = { "@MIC@" },  -- e.g. { "My USB Headset", "@MIC@" }
 
   ffmpeg = "@FFMPEG@",
   python = "@PYTHON@",

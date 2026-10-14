@@ -59,8 +59,9 @@ def audio_secs(wav):
 
 
 def models_by_id():
-    """Which model transcribed each dictation, from dictations/log.jsonl.
-    Older entries without a model field were Whisper small.en."""
+    """Which model and mic each dictation used, from dictations/log.jsonl.
+    Older entries lack these fields: they were Whisper small.en on the
+    built-in mic (the only mic the tool used before mic logging)."""
     out = {}
     log = os.path.join(DATA, "log.jsonl")
     if os.path.exists(log):
@@ -70,7 +71,7 @@ def models_by_id():
             except ValueError:
                 continue
             item_id = "/".join(r.get("wav", "").removesuffix(".wav").split("/")[-2:])
-            out[item_id] = r.get("model") or "small.en"
+            out[item_id] = {"model": r.get("model") or "small.en", "mic": r.get("mic") or "MacBook Pro Microphone"}
     return out
 
 
@@ -90,7 +91,7 @@ def list_items():
                 "secs": round(audio_secs(os.path.join(DATA, day, name)), 1),
                 "status": status(versions),
                 "preview": versions[-1]["text"][:90],
-                "model": models.get(item_id, "unknown"),
+                **models.get(item_id, {"model": "unknown", "mic": "unknown"}),
             })
     return items
 
@@ -145,7 +146,7 @@ class Handler(BaseHTTPRequestHandler):
             elif url.path == "/api/item":
                 versions = load_versions(q["id"])
                 self.send(200, {"id": q["id"], "versions": versions, "status": status(versions),
-                                "model": models_by_id().get(q["id"], "unknown")})
+                                **models_by_id().get(q["id"], {"model": "unknown", "mic": "unknown"})})
             elif url.path == "/audio":
                 self.send_audio(paths(q["id"])[0])
             else:

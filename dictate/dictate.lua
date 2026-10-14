@@ -16,7 +16,21 @@ local PROMPT_FILE = ROOT .. "/prompt.txt"
 local DATA_DIR = ROOT .. "/dictations"
 local TRANSCRIBE = ROOT .. "/dictate/transcribe.py"
 local FFMPEG, PYTHON = cfg.ffmpeg, cfg.python
-local MIC = cfg.mic -- by name: virtual devices (Zoom, Teams, ...) shift indices
+-- Mics by name, in priority order: each recording uses the first one that's
+-- plugged in (e.g. a headset when connected, else the built-in mic). By name
+-- because virtual devices (Zoom, Teams, ...) shift ffmpeg's indices.
+local MICS = cfg.mics or { cfg.mic }
+
+local function pickMic()
+  local present = {}
+  for _, dev in ipairs(hs.audiodevice.allInputDevices()) do
+    present[dev:name()] = true
+  end
+  for _, name in ipairs(MICS) do
+    if present[name] then return name end
+  end
+  return MICS[#MICS] -- nothing matched: try the last (fallback) entry anyway
+end
 local PORT = cfg.port
 
 -- Engine: "whisper" (whisper-server + vocab prompt) or "parakeet" (a
@@ -36,7 +50,7 @@ local READY_SOUND = hs.sound.getByName("Tink")
 -- (init.lua discards dofile's return value).
 dictate = {}
 local M = dictate
-local server, recorder, wavPath, startedAt, cancelled
+local server, recorder, wavPath, startedAt, cancelled, recMic
 local menu = hs.menubar.new()
 M.menu = menu
 
@@ -85,6 +99,7 @@ end
 -- recording -------------------------------------------------------------------
 
 local function startRecording()
+  recMic = pickMic()
   local now = os.time()
   local dir = DATA_DIR .. "/" .. os.date("%Y-%m-%d", now)
   hs.fs.mkdir(DATA_DIR)
@@ -95,7 +110,7 @@ local function startRecording()
   recorder = hs.task.new(FFMPEG, nil, {
     "-y", "-hide_banner", "-loglevel", "warning",
     "-thread_queue_size", "4096",
-    "-f", "avfoundation", "-i", ":" .. MIC,
+    "-f", "avfoundation", "-i", ":" .. recMic,
     "-ac", "1", "-ar", "16000", "-flush_packets", "1", wavPath,
   })
   recorder:start()
@@ -127,7 +142,7 @@ local function pasteText(text)
   hs.timer.doAfter(0.5, function() hs.pasteboard.writeAllData(saved) end)
 end
 
-local function transcribe(wav, heldFor)
+local function transcribe(wav, heldFor, mic)
   local secs = audioSecs(wav)
   local app = hs.application.frontmostApplication()
   local appName = app and app:name() or ""
@@ -148,7 +163,7 @@ local function transcribe(wav, heldFor)
     appendFile(wav:gsub("%.wav$", ".txt"), text .. "\n")
     appendFile(DATA_DIR .. "/log.jsonl", hs.json.encode({
       time = os.date("!%Y-%m-%dT%H:%M:%SZ"), wav = wav, text = text,
-      audio_secs = secs, held_secs = heldFor, latency_secs = latency,
+      audio_secs = secs, held_secs = heldFor, latency_secs = latency, mic = mic,
       chunks = resp.chunks, model = MODEL_NAME, engine = ENGINE, app = appName,
     }) .. "\n")
   end
@@ -170,7 +185,7 @@ end
 
 local function stopRecording()
   if not recorder then return end
-  local wav, heldFor = wavPath, hs.timer.secondsSinceEpoch() - startedAt
+  local wav, heldFor, mic = wavPath, hs.timer.secondsSinceEpoch() - startedAt, recMic
   local task, wasCancelled = recorder, cancelled
   recorder = nil
   if M.readyTimer then M.readyTimer:stop() end
@@ -178,12 +193,12 @@ local function stopRecording()
     local secs = audioSecs(wav)
     -- Record capture health: audio length vs wall time, plus any ffmpeg warnings.
     appendFile(DATA_DIR .. "/ffmpeg.log", string.format("%s held=%.1fs audio=%.1fs\n%s",
-      wav, heldFor, secs, stderr or ""))
+      wav .. " mic=" .. tostring(mic), heldFor, secs, stderr or ""))
     if wasCancelled or secs < MIN_AUDIO then
       os.remove(wav)
       setStatus("idle")
     else
-      transcribe(wav, heldFor)
+      transcribe(wav, heldFor, mic)
     end
   end)
   task:interrupt() -- SIGINT: ffmpeg finalizes the WAV header and exits

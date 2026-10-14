@@ -66,11 +66,12 @@ function label(it) {
   const [day, t] = it.id.split("/");
   const d = new Date(day + "T00:00:00");
   const date = d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
-  const tag = isParakeet(it.model) ? ` [${modelName(it.model)}]` : "";
+  const tag = (isParakeet(it.model) ? ` [${modelName(it.model)}]` : "") + (micName(it.mic) !== "built-in" ? ` [mic: ${micName(it.mic)}]` : "");
   return `${ICON[it.status]}  ${date} ${t.slice(0,2)}:${t.slice(2,4)}:${t.slice(4)} · ${it.secs}s${tag} · ${it.preview}`;
 }
 
 // Dictations transcribed by Parakeet get flagged; older ones (no model in the log) were Whisper small.en.
+function micName(m) { return !m || m === "unknown" ? "unknown" : /MacBook/.test(m) ? "built-in" : m; }
 function isParakeet(m) { return /parakeet|^ft-|mix_|tdt/.test(m || ""); }
 function modelName(m) {
   if (!m) return "unknown";
@@ -100,7 +101,8 @@ function render() {
   $("pos").textContent = `${sel + 1} of ${n}`;
   $("newer").disabled = sel <= 0; $("older").disabled = sel >= n - 1;
   const dirty = $("text").value.trim() !== vs[vs.length - 1].text;
-  $("model").textContent = `Transcribed by: ${modelName(current.model)}` + (current.model && current.model !== modelName(current.model) ? ` (${current.model})` : "");
+  $("model").textContent = `Transcribed by: ${modelName(current.model)}` + (current.model && current.model !== modelName(current.model) ? ` (${current.model})` : "") +
+    ` · Mic: ${micName(current.mic)}`;
   $("model").className = isParakeet(current.model) ? "model pk" : "model";
   $("status").textContent = `Status: ${current.status === "model" ? "unreviewed (model output)" : current.status === "edited" ? "edited manually" : "verified correct"}` + (dirty ? " · unsaved changes" : "");
   const base = vs.filter(v => v.source === "model").at(-1);  // latest model transcript

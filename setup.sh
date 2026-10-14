@@ -56,7 +56,7 @@ if [[ ! -f config.lua ]]; then
     | sed -n '/audio devices/,$p' | sed -nE 's/.*\] \[[0-9]+\] (.*)/\1/p' || true)
   MIC=$(grep -m1 Microphone <<<"$MICS" || head -1 <<<"$MICS")
   sed -e "s|@MODEL@|$MODEL|" -e "s|@GPU@|$GPU|" -e "s|@THREADS@|$THREADS|" \
-      -e "s|@MIC@|$MIC|" -e "s|@FFMPEG@|$(command -v ffmpeg)|" -e "s|@PYTHON@|$(command -v python3)|" \
+      -e "s|@MIC@|$MIC|g" -e "s|@FFMPEG@|$(command -v ffmpeg)|" -e "s|@PYTHON@|$(command -v python3)|" \
       config.example.lua > config.lua
   say "Wrote config.lua (mic: $MIC)"
 fi
